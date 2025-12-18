@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1766085591 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\01_basic_window\main.cpp
+	"raylib.h"
+	<iostream>
+
+1750638462 c:\raylib-5.5_win64_mingw-w64\include\raylib.h
+	<stdarg.h>
+	<stdbool.h>
+
