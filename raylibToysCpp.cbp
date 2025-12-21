@@ -41,7 +41,7 @@
 			<Add library="winmm" />
 			<Add directory="C:/raylib-5.5_win64_mingw-w64/lib" />
 		</Linker>
-		<Unit filename="src/02_input_keys/main.cpp" />
+		<Unit filename="src/03_mouse_wheel/main.cpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>
