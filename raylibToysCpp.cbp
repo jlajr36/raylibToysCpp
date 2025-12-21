@@ -35,13 +35,13 @@
 			<Add directory="C:/raylib-5.5_win64_mingw-w64/include" />
 		</Compiler>
 		<Linker>
-			<Add directory="C:/raylib-5.5_win64_mingw-w64/lib" />
 			<Add library="raylib" />
 			<Add library="opengl32" />
 			<Add library="gdi32" />
 			<Add library="winmm" />
+			<Add directory="C:/raylib-5.5_win64_mingw-w64/lib" />
 		</Linker>
-		<Unit filename="src/01_basic_window/main.cpp" />
+		<Unit filename="src/02_input_keys/main.cpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

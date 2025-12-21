@@ -7,3 +7,7 @@
 	<stdarg.h>
 	<stdbool.h>
 
+1766281789 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\02_input_keys\main.cpp
+	"raylib.h"
+	<iostream>
+
