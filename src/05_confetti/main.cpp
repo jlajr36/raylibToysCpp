@@ -1,6 +1,8 @@
 #include "raylib.h"
 #include <vector>
 #include <cstdlib>
+#include <ctime>
+#include <algorithm>
 
 using namespace std;
 
@@ -20,71 +22,83 @@ Color COLORS[] = {
 struct ConfettiParticle {
     Vector2 pos;
     Vector2 vel;
-    float r;        // radius
-    float opacity;  // 0.0 - 1.0
-    float dop;      // opacity change per frame
-    Color color;
+    float   r;        // radius
+    float   opacity;  // 0.0 – 1.0
+    float   dop;      // change in opacity per frame (can be negative)
+    Color   color;
 };
 
-// Helper function: random float in range [min, max)
+// Helper: random float in [min, max)
 float GetRandom(float min, float max) {
     return min + static_cast<float>(rand()) / RAND_MAX * (max - min);
 }
 
-// Initialize confetti particles
-void InitConfetti(vector<ConfettiParticle>& confetti, int screenWidth, int screenHeight) {
-    for (auto& c : confetti) {
-        c.r = GetRandom(2, 6);
-        c.pos = { GetRandom(0, (float)screenWidth), GetRandom(-20.0f, (float)screenHeight) };
-        c.vel = { GetRandom(-1.0f, 1.0f), 0.7f * c.r + GetRandom(-1.0f, 1.0f) };
-        int colorIndex = rand() % 5;
-        c.color = COLORS[colorIndex];
-        c.opacity = 0.0f;
-        c.dop = 0.03f * GetRandom(1.0f, 4.0f);
-    }
+// Initialise a single particle (called on start and on reset)
+void ResetParticle(ConfettiParticle& p, int screenWidth, int screenHeight) {
+    p.r       = GetRandom(2, 6);
+    p.pos     = { GetRandom(0, (float)screenWidth),
+                  GetRandom(-20.0f, (float)screenHeight) };
+    p.vel     = { GetRandom(-1.0f, 1.0f),
+                  0.7f * p.r + GetRandom(-1.0f, 1.0f) };
+    p.color   = COLORS[rand() % 5];
+    p.opacity = 0.0f;                                 // start invisible
+    p.dop     = 0.03f * GetRandom(1.0f, 4.0f);        // positive → fade‑in
 }
 
-// Update confetti particles
-void UpdateConfetti(vector<ConfettiParticle>& confetti, int screenWidth, int screenHeight) {
+
+// Initialise the whole vector
+void InitConfetti(vector<ConfettiParticle>& confetti,
+                 int screenWidth, int screenHeight) {
+    for (auto& c : confetti) ResetParticle(c, screenWidth, screenHeight);
+}
+
+// Update – now includes fade‑in → fade‑out logic
+void UpdateConfetti(vector<ConfettiParticle>& confetti,
+                    int screenWidth, int screenHeight) {
     for (auto& c : confetti) {
-        // Move confetti
+        // ---- movement -------------------------------------------------
         c.pos.x += c.vel.x;
         c.pos.y += c.vel.y;
 
-        // Fade in to full opacity
-        c.opacity += c.dop;
-        if (c.opacity > 1.0f) c.opacity = 1.0f;
+        // ---- opacity fade ------------------------------------------------
+        c.opacity += c.dop;                     // dop may be positive or negative
 
-        // Reset if below the screen
-        if (c.pos.y > screenHeight) {
-            c.pos.x = GetRandom(0.0f, (float)screenWidth);
-            c.pos.y = GetRandom(-20.0f, -5.0f);
-            c.vel.x = GetRandom(-1.0f, 1.0f);
-            c.vel.y = 0.7f * c.r + GetRandom(-1.0f, 1.0f);
-            c.opacity = 0.0f;
-            c.dop = 0.03f * GetRandom(1.0f, 4.0f);
+        if (c.opacity >= 1.0f) {                // reached full opacity → start fading out
+            c.opacity = 1.0f;
+            c.dop = -c.dop;                     // flip sign
+        }
+        if (c.opacity <= 0.0f) {                // fully transparent again → respawn
+            ResetParticle(c, screenWidth, screenHeight);
+            continue;                           // skip further checks for this frame
         }
 
-        // Wrap around X-axis
+        // ---- respawn when falling off the bottom -------------------------
+        if (c.pos.y > screenHeight) {
+            ResetParticle(c, screenWidth, screenHeight);
+            continue;
+        }
+
+        // ---- horizontal wrap --------------------------------------------
         if (c.pos.x < 0) c.pos.x += screenWidth;
         if (c.pos.x > screenWidth) c.pos.x -= screenWidth;
     }
 }
 
-// Draw confetti particles
+// Draw – opacity is encoded in the alpha channel
 void DrawConfetti(const vector<ConfettiParticle>& confetti) {
     for (const auto& c : confetti) {
         Color col = c.color;
-        col.a = (unsigned char)(c.opacity * 255);
+        col.a = static_cast<unsigned char>(c.opacity * 255);
         DrawCircleV(c.pos, c.r, col);
     }
 }
 
-int main(void)
-{
-    // Window initialization
-    const int screenWidth = 540;
+int main(void) {
+    srand(static_cast<unsigned>(time(nullptr)));   // seed RNG once
+
+    const int screenWidth  = 540;
     const int screenHeight = 960;
+
     InitWindow(screenWidth, screenHeight, "Falling Confetti");
     SetTargetFPS(60);
 
