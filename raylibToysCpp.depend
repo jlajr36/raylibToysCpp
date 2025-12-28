@@ -11,3 +11,8 @@
 	"raylib.h"
 	<iostream>
 
+1766958773 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\05_confetti\main.cpp
+	"raylib.h"
+	<vector>
+	<cstdlib>
+
