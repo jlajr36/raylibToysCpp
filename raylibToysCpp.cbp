@@ -41,7 +41,7 @@
 			<Add library="winmm" />
 			<Add directory="C:/raylib-5.5_win64_mingw-w64/lib" />
 		</Linker>
-		<Unit filename="src/05_confetti/main.cpp" />
+		<Unit filename="src/06_orbital_trails/main.cpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>
