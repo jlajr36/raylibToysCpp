@@ -1,93 +1,102 @@
-#include <raylib.h>
+#include "raylib.h"
 #include <vector>
 #include <cmath>
 #include <cstdlib>
 
 struct Orb {
-    Vector2 center;    // orbit center
-    float radius;      // distance from center
-    float angle;       // current angle in radians
-    float speed;       // angular speed
-    float size;        // line thickness
-    float hue;         // for color cycling
-    Vector2 pos;       // current position
-    Vector2 lastPos;   // previous position
+    float centerX;
+    float centerY;
+    float radius;
+    float angle;
+    float speed;
+    float size;
+
+    float x, y;
+    float lastX, lastY;
 };
 
-float RandomFloat(float min, float max) {
-    return min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (max - min)));
+float Rand(float min, float max) {
+    return min + (float)rand() / RAND_MAX * (max - min);
 }
 
-Color HSVtoRGB(float h, float s, float v) {
-    float r, g, b;
+// Convert HSL to Color (raylib uses RGB)
+Color HSLtoRGB(float h, float s, float l) {
+    float c = (1.0f - fabsf(2.0f * l - 1.0f)) * s;
+    float x = c * (1.0f - fabsf(fmodf(h / 60.0f, 2.0f) - 1.0f));
+    float m = l - c / 2.0f;
 
-    int i = int(h * 6);
-    float f = h * 6 - i;
-    float p = v * (1 - s);
-    float q = v * (1 - f * s);
-    float t = v * (1 - (1 - f) * s);
+    float r = 0, g = 0, b = 0;
 
-    switch(i % 6){
-        case 0: r=v, g=t, b=p; break;
-        case 1: r=q, g=v, b=p; break;
-        case 2: r=p, g=v, b=t; break;
-        case 3: r=p, g=q, b=v; break;
-        case 4: r=t, g=p, b=v; break;
-        case 5: r=v, g=p, b=q; break;
-    }
+    if (h < 60)      { r = c; g = x; }
+    else if (h < 120){ r = x; g = c; }
+    else if (h < 180){ g = c; b = x; }
+    else if (h < 240){ g = x; b = c; }
+    else if (h < 300){ r = x; b = c; }
+    else             { r = c; b = x; }
 
-    return Color{(unsigned char)(r*255),(unsigned char)(g*255),(unsigned char)(b*255),255};
+    return {
+        (unsigned char)((r + m) * 255),
+        (unsigned char)((g + m) * 255),
+        (unsigned char)((b + m) * 255),
+        255
+    };
 }
 
 int main() {
-    const int screenWidth = 800;
-    const int screenHeight = 600;
-    InitWindow(screenWidth, screenHeight, "Orbital Trail");
+    const int screenWidth = 1280;
+    const int screenHeight = 720;
+    const int ORB_COUNT = 300;
+
+    InitWindow(screenWidth, screenHeight, "Orb Trail");
     SetTargetFPS(60);
 
-    // Center of the screen
-    Vector2 center = {(float)screenWidth/2, (float)screenHeight/2};
-
-    // Multiple orbs
-    const int orbCount = 200;
     std::vector<Orb> orbs;
-    for(int i=0; i<orbCount; ++i){
-        float r = RandomFloat(50, 250);
-        float angle = RandomFloat(0, 2*PI);
-        float speed = RandomFloat(0.5f, 2.0f)/100.0f; // slow orbital speed
-        float size = RandomFloat(1.0f, 3.0f);
-        orbs.push_back(Orb{center, r, angle, speed, size, RandomFloat(0,1), 
-                            {center.x + cos(angle)*r, center.y + sin(angle)*r},
-                            {center.x + cos(angle)*r, center.y + sin(angle)*r}});
+    float maxRadius = fminf(screenWidth, screenHeight) * 0.45f;
+
+    // Create orbs
+    for (int i = 0; i < ORB_COUNT; i++) {
+        Orb orb;
+        orb.centerX = screenWidth / 2.0f;
+        orb.centerY = screenHeight / 2.0f;
+        orb.radius = Rand(20.0f, maxRadius);
+        orb.angle = Rand(0.0f, PI * 2.0f);
+        orb.speed = Rand(0.005f, 0.02f);
+        orb.size = Rand(0.5f, 1.5f);
+
+        orb.x = orb.centerX + cosf(orb.angle) * orb.radius;
+        orb.y = orb.centerY + sinf(orb.angle) * orb.radius;
+        orb.lastX = orb.x;
+        orb.lastY = orb.y;
+
+        orbs.push_back(orb);
     }
 
-    bool trail = true;
+    // Main loop
+    while (!WindowShouldClose()) {
 
-    while(!WindowShouldClose()){
-        float dt = GetFrameTime();
-
-        // Update orbs
-        for(auto &orb : orbs){
-            orb.lastPos = orb.pos;
-            orb.angle += orb.speed;
-            orb.pos.x = orb.center.x + cos(orb.angle) * orb.radius;
-            orb.pos.y = orb.center.y + sin(orb.angle) * orb.radius;
-
-            orb.hue += dt * 0.1f;
-            if(orb.hue > 1.0f) orb.hue -= 1.0f;
-        }
-
-        // Draw
         BeginDrawing();
-        if(trail){
-            DrawRectangle(0,0,screenWidth,screenHeight,Fade(BLACK,0.1f)); // fading trail
-        } else {
-            ClearBackground(BLACK);
-        }
 
-        for(const auto &orb : orbs){
-            Color col = HSVtoRGB(orb.hue, 1.0f, 1.0f);
-            DrawLineV(orb.lastPos, orb.pos, col);
+        // Trail fade (equivalent to rgba(0,0,0,0.1))
+        DrawRectangle(0, 0, screenWidth, screenHeight, {0, 0, 0, 25});
+
+        for (auto& orb : orbs) {
+            orb.lastX = orb.x;
+            orb.lastY = orb.y;
+
+            orb.angle += orb.speed;
+
+            orb.x = orb.centerX + cosf(orb.angle) * orb.radius;
+            orb.y = orb.centerY + sinf(orb.angle) * orb.radius;
+
+            float hue = fmodf(orb.angle * 180.0f / PI, 360.0f);
+            Color col = HSLtoRGB(hue, 1.0f, 0.5f);
+
+            DrawLineEx(
+                { orb.lastX, orb.lastY },
+                { orb.x, orb.y },
+                orb.size,
+                col
+            );
         }
 
         EndDrawing();
