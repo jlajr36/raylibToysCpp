@@ -16,9 +16,10 @@
 	<vector>
 	<cstdlib>
 
-1767304089 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\06_orbital_trails\main.cpp
+1768092336 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\06_orbital_trails\main.cpp
 	<raylib.h>
+	<random>
 	<vector>
-	<cmath>
-	<cstdlib>
+	<iostream>
+	<iomanip>
 

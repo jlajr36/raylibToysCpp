@@ -1,25 +1,45 @@
-#include "raylib.h"
+#include <raylib.h>
+#include <random>
 #include <vector>
-#include <cmath>
-#include <cstdlib>
 
-struct Orb {
+#include <iostream>
+#include <iomanip>
+
+using namespace std;
+
+struct Orbit
+{
     float centerX;
     float centerY;
     float radius;
     float angle;
     float speed;
     float size;
-
     float x, y;
     float lastX, lastY;
 };
 
-float Rand(float min, float max) {
-    return min + (float)rand() / RAND_MAX * (max - min);
+inline std::ostream& operator<<(std::ostream& os, const Orbit& o)
+{
+    os << "Orbit{ "
+       << "cx=" << fixed << setprecision(2) << o.centerX << ' '
+       << "cy=" << fixed << setprecision(2) << o.centerY << ' '
+       << "r="  << fixed << setprecision(2) << o.radius  << ' '
+       << "a="  << fixed << setprecision(2) << o.angle   << ' '
+       << "s="  << fixed << setprecision(3) << o.speed   << ' '
+       << "sz=" << fixed << setprecision(2) << o.size    << ' '
+       << "x="  << fixed << setprecision(2) << o.x       << ' '
+       << "y="  << fixed << setprecision(2) << o.y
+       << " }";
+    return os;
 }
 
-// Convert HSL to Color (raylib uses RGB)
+float Rand(float min, float max) {
+    static mt19937 engine{random_device{}()};
+    uniform_real_distribution<float> dist(min, max);
+    return dist(engine);
+}
+
 Color HSLtoRGB(float h, float s, float l) {
     float c = (1.0f - fabsf(2.0f * l - 1.0f)) * s;
     float x = c * (1.0f - fabsf(fmodf(h / 60.0f, 2.0f) - 1.0f));
@@ -43,62 +63,57 @@ Color HSLtoRGB(float h, float s, float l) {
 }
 
 int main() {
-    const int screenWidth = 1280;
-    const int screenHeight = 720;
-    const int ORB_COUNT = 300;
+    const int screenWidth  = 800;
+    const int screenHeight = 450;
+    const int numOrbs = 300;
 
-    InitWindow(screenWidth, screenHeight, "Orb Trail");
+    InitWindow(screenWidth, screenHeight, "Raylib C++ Template");
     SetTargetFPS(60);
 
-    std::vector<Orb> orbs;
     float maxRadius = fminf(screenWidth, screenHeight) * 0.45f;
 
-    // Create orbs
-    for (int i = 0; i < ORB_COUNT; i++) {
-        Orb orb;
-        orb.centerX = screenWidth / 2.0f;
-        orb.centerY = screenHeight / 2.0f;
-        orb.radius = Rand(20.0f, maxRadius);
-        orb.angle = Rand(0.0f, PI * 2.0f);
-        orb.speed = Rand(0.005f, 0.02f);
-        orb.size = Rand(0.5f, 1.5f);
+    vector<Orbit> orbits;
+    for (int i = 0; i < numOrbs; i++) {
+        Orbit orbit;
 
-        orb.x = orb.centerX + cosf(orb.angle) * orb.radius;
-        orb.y = orb.centerY + sinf(orb.angle) * orb.radius;
-        orb.lastX = orb.x;
-        orb.lastY = orb.y;
+        orbit.centerX = screenWidth / 2.0f;
+        orbit.centerY = screenHeight / 2.0f;
+        orbit.radius = Rand(20.0f, maxRadius);
+        orbit.angle = Rand(0.0f, PI * 2.0f);
+        orbit.speed = Rand(0.005f, 0.02f);
+        orbit.size = Rand(0.5f, 1.5f);
 
-        orbs.push_back(orb);
+        orbit.x = orbit.centerX + cosf(orbit.angle) * orbit.radius;
+        orbit.y = orbit.centerY + sinf(orbit.angle) * orbit.radius;
+        orbit.lastX = orbit.x;
+        orbit.lastY = orbit.y;
+
+        orbits.push_back(orbit);
     }
 
-    // Main loop
     while (!WindowShouldClose()) {
-
         BeginDrawing();
 
-        // Trail fade (equivalent to rgba(0,0,0,0.1))
         DrawRectangle(0, 0, screenWidth, screenHeight, {0, 0, 0, 25});
+        for (auto& orbit : orbits) {
+            orbit.lastX = orbit.x;
+            orbit.lastY = orbit.y;
 
-        for (auto& orb : orbs) {
-            orb.lastX = orb.x;
-            orb.lastY = orb.y;
+            orbit.angle += orbit.speed;
 
-            orb.angle += orb.speed;
+            orbit.x = orbit.centerX + cosf(orbit.angle) * orbit.radius;
+            orbit.y = orbit.centerY + sinf(orbit.angle) * orbit.radius;
 
-            orb.x = orb.centerX + cosf(orb.angle) * orb.radius;
-            orb.y = orb.centerY + sinf(orb.angle) * orb.radius;
-
-            float hue = fmodf(orb.angle * 180.0f / PI, 360.0f);
+            float hue = fmodf(orbit.angle * 180.0f / PI, 360.0f);
             Color col = HSLtoRGB(hue, 1.0f, 0.5f);
 
             DrawLineEx(
-                { orb.lastX, orb.lastY },
-                { orb.x, orb.y },
-                orb.size,
+                { orbit.lastX, orbit.lastY },
+                { orbit.x, orbit.y },
+                orbit.size,
                 col
             );
         }
-
         EndDrawing();
     }
 
