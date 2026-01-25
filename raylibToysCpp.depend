@@ -23,3 +23,9 @@
 	<iostream>
 	<iomanip>
 
+1769375503 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\07_sim_obstacle_robot\main.cpp
+	"raylib.h"
+	<cmath>
+	<vector>
+	<limits>
+
