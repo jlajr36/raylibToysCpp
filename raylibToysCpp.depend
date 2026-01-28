@@ -23,9 +23,24 @@
 	<iostream>
 	<iomanip>
 
-1769375503 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\07_sim_obstacle_robot\main.cpp
+1769377417 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\07_sim_obstacle_robot\main.cpp
 	"raylib.h"
 	<cmath>
 	<vector>
 	<limits>
+
+1769564226 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\main.cpp
+	"raylib.h"
+	<cmath>
+	<array>
+
+1769563049 c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\perlinnoise.hpp
+	<cstdint>
+	<algorithm>
+	<array>
+	<iterator>
+	<numeric>
+	<random>
+	<type_traits>
+	<concepts>
 

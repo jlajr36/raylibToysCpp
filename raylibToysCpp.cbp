@@ -41,7 +41,7 @@
 			<Add library="winmm" />
 			<Add directory="C:/raylib-5.5_win64_mingw-w64/lib" />
 		</Linker>
-		<Unit filename="src/07_sim_obstacle_robot/main.cpp" />
+		<Unit filename="src/08_perlin_noise/main.cpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>
