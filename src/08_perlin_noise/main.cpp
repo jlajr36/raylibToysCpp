@@ -1,5 +1,5 @@
 #include "raylib.h"
-#include "Perlin2D.h"
+#include "Perlin2D.h" // Make sure you have this header for perlin2D()
 #include <cmath>
 #include <vector>
 
@@ -13,15 +13,6 @@ float Clamp(float value, float min, float max) {
 float Lerp(float a, float b, float t) {
     return a + t * (b - a);
 }
-
-// ===================== Terrain =====================
-struct TerrainType {
-    float minHeight;
-    float maxHeight;
-    Color minColor;
-    Color maxColor;
-    float lerpAdjust;
-};
 
 float normalize(float value, float min, float max) {
     if (value < min) return 0.0f;
@@ -38,6 +29,14 @@ Color lerpColor(Color a, Color b, float t) {
         255
     };
 }
+
+struct TerrainType {
+    float minHeight;
+    float maxHeight;
+    Color minColor;
+    Color maxColor;
+    float lerpAdjust;
+};
 
 Color getTerrainColor(float noise, const TerrainType& t) {
     float n = normalize(noise, t.minHeight, t.maxHeight);
@@ -58,7 +57,7 @@ float fractalPerlin(float x, float y, unsigned int seed, int octaves = 4, float 
         frequency *= 2.0f;
     }
 
-    return total / maxValue; // may be in [-1,1]
+    return total / maxValue; // [-1,1]
 }
 
 // ===================== Main =====================
@@ -66,7 +65,7 @@ int main() {
     const int screenWidth = 800;
     const int screenHeight = 600;
 
-    InitWindow(screenWidth, screenHeight, "Smooth 2D Perlin Terrain");
+    InitWindow(screenWidth, screenHeight, "2D Terrain with 3D Shadow Effect");
     RenderTexture2D noiseTexture = LoadRenderTexture(screenWidth, screenHeight);
 
     float zoom = 150.0f;
@@ -102,42 +101,68 @@ int main() {
             needsRedraw = true;
         }
 
-        // ---- Redraw noise ----
+        // ---- Redraw noise with shadow ----
         if (needsRedraw) {
             Image img = GenImageColor(screenWidth, screenHeight, BLANK);
             Color* pixels = (Color*)img.data;
+
+            // Precompute height map for better shadow calculation
+            std::vector<std::vector<float>> heightMap(screenHeight, std::vector<float>(screenWidth));
 
             for (int y = 0; y < screenHeight; y++) {
                 for (int x = 0; x < screenWidth; x++) {
                     float nx = (x - screenWidth * 0.5f + offsetX) / zoom;
                     float ny = (y - screenHeight * 0.5f + offsetY) / zoom;
 
-                    // Fractal Perlin
                     float n = fractalPerlin(nx, ny, seed, 5, 0.5f);
-
-                    // map [-1,1] → [0,1]
                     n = (n + 1.0f) * 0.5f;
                     n = Clamp(n, 0.0f, 1.0f);
 
-                    // Terrain color
-                    Color pixel;
-                    if (n < water.maxHeight)
-                        pixel = getTerrainColor(n, water);
-                    else if (n < sand.maxHeight)
-                        pixel = getTerrainColor(n, sand);
-                    else if (n < grass.maxHeight)
-                        pixel = getTerrainColor(n, grass);
-                    else
-                        pixel = getTerrainColor(n, trees);
-
-                    pixels[y * screenWidth + x] = pixel;
+                    heightMap[y][x] = n;
                 }
             }
 
-            // Update texture (no negative height)
+            // Now generate color with shadow
+            for (int y = 0; y < screenHeight; y++) {
+                for (int x = 0; x < screenWidth; x++) {
+                    float n = heightMap[y][x];
+
+                    // Terrain color
+                    Color baseColor;
+                    if (n < water.maxHeight)      baseColor = getTerrainColor(n, water);
+                    else if (n < sand.maxHeight)  baseColor = getTerrainColor(n, sand);
+                    else if (n < grass.maxHeight) baseColor = getTerrainColor(n, grass);
+                    else                          baseColor = getTerrainColor(n, trees);
+
+                    // --- Shadow / Lighting ---
+                    float nLeft  = (x > 0) ? heightMap[y][x-1] : n;
+                    float nRight = (x < screenWidth-1) ? heightMap[y][x+1] : n;
+                    float nUp    = (y > 0) ? heightMap[y-1][x] : n;
+                    float nDown  = (y < screenHeight-1) ? heightMap[y+1][x] : n;
+
+                    float dx = nRight - nLeft;
+                    float dy = nDown - nUp;
+
+                    // Light from top-left (-1,-1)
+                    float light = 0.5f + 0.5f * (-dx - dy + 1.0f);
+                    light = Clamp(light, 0.0f, 1.0f);
+                    light = pow(light, 1.5f); // sharper shadows
+
+                    // Apply shading
+                    Color shaded = Color{
+                        (unsigned char)(baseColor.r * light),
+                        (unsigned char)(baseColor.g * light),
+                        (unsigned char)(baseColor.b * light),
+                        255
+                    };
+
+                    pixels[y * screenWidth + x] = shaded;
+                }
+            }
+
+            // Update texture
             UpdateTextureRec(noiseTexture.texture, (Rectangle){0,0,(float)screenWidth,(float)screenHeight}, pixels);
             UnloadImage(img);
-
             needsRedraw = false;
         }
 
@@ -155,4 +180,3 @@ int main() {
     CloseWindow();
     return 0;
 }
-
