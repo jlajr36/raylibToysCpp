@@ -29,10 +29,11 @@
 	<vector>
 	<limits>
 
-1769564226 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\main.cpp
+1770428906 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\main.cpp
 	"raylib.h"
+	"Perlin2D.h"
 	<cmath>
-	<array>
+	<vector>
 
 1769563049 c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\perlinnoise.hpp
 	<cstdint>
@@ -47,4 +48,13 @@
 1769987837 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\09_line_follower\main.cpp
 	"raylib.h"
 	<vector>
+
+1770249623 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\perlin2d.cpp
+	"Perlin2D.h"
+	<vector>
+	<cstdlib>
+	<algorithm>
+	<cmath>
+
+1770249607 c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\perlin2d.h
 
