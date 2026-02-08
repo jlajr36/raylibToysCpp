@@ -8,6 +8,9 @@ int main() {
 
     InitWindow(screenWidth, screenHeight, "2D Terrain Modular");
 
+    // Load custom font
+    Font myFont = LoadFont("assets/Roboto.ttf");
+
     RenderTexture2D terrainTexture = LoadRenderTexture(screenWidth, screenHeight);
     Terrain terrain(screenWidth, screenHeight, 1234);
     CameraController camera;
@@ -20,12 +23,26 @@ int main() {
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
-        terrain.Draw(terrainTexture.texture); // ✅ Pass inner Texture2D
-        DrawTextureRec(terrainTexture.texture, (Rectangle){0,0,(float)screenWidth,(float)screenHeight}, {0,0}, WHITE);
-        DrawText("W/S = Zoom | Arrows = Pan | Mouse Wheel = Zoom", 10,10,20,RED);
+
+        // Draw terrain to render texture
+        terrain.Draw(terrainTexture.texture);
+        DrawTextureRec(terrainTexture.texture, (Rectangle){0,0,(float)screenWidth,(float)screenHeight}, (Vector2){0,0}, WHITE);
+
+        // Draw UI text using custom font
+        DrawTextEx(myFont,
+                   "W/S = Zoom | Arrows = Pan | Mouse Wheel = Zoom",
+                   (Vector2){10, 10},   // Position
+                   20,                  // Font size
+                   2,                   // Letter spacing
+                   BLACK);              // Color
+
         EndDrawing();
     }
 
+    // Unload resources
+    UnloadFont(myFont);
     UnloadRenderTexture(terrainTexture);
     CloseWindow();
+
+    return 0;
 }
