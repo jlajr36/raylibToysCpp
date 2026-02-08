@@ -29,11 +29,10 @@
 	<vector>
 	<limits>
 
-1770429286 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\main.cpp
+1770520054 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\main.cpp
 	"raylib.h"
-	"Perlin2D.h"
-	<cmath>
-	<vector>
+	"Terrain.h"
+	"Camera.h"
 
 1769563049 c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\perlinnoise.hpp
 	<cstdint>
@@ -49,7 +48,7 @@
 	"raylib.h"
 	<vector>
 
-1770249623 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\perlin2d.cpp
+1770519351 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\perlin2d.cpp
 	"Perlin2D.h"
 	<vector>
 	<cstdlib>
@@ -57,4 +56,26 @@
 	<cmath>
 
 1770249607 c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\perlin2d.h
+
+1770520002 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\camera.cpp
+	"Camera.h"
+
+1770520002 c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\camera.h
+	"raylib.h"
+
+1770520017 c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\terrain.h
+	"raylib.h"
+	<vector>
+
+1770520035 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\terrain.cpp
+	"Terrain.h"
+	"Utils.h"
+	"NoiseUtils.h"
+	<cmath>
+
+1770519918 c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\utils.h
+	"raylib.h"
+
+1770519969 c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\noiseutils.h
+	"Perlin2D.h"
 
