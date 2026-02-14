@@ -79,3 +79,9 @@
 1770519969 c:\users\horiz\desktop\projects\raylibtoyscpp\src\08_perlin_noise\noiseutils.h
 	"Perlin2D.h"
 
+1771110409 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\10_lidar_mouse\main.cpp
+	<raylib.h>
+	<cmath>
+	<vector>
+	<random>
+
