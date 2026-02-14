@@ -5,38 +5,49 @@
 
 // ------------------ Sensor Measurement ------------------
 struct SensorMeasurement {
-    float distance;
-    float angle;
-    Vector2 position;
+    float distance;   // measured distance
+    float angle;      // measured angle
+    Vector2 position; // sensor position
 };
 
 // ------------------ Laser Sensor ------------------
 class LaserSensor {
 public:
-    float Range;
-    Vector2 position;
-    float sigma_distance, sigma_angle;
+    float Range;            // max sensor range
+    Vector2 position;       // sensor position
+    float sigma_distance;   // distance noise
+    float sigma_angle;      // angle noise
+
+    // Random number generator moved outside function for efficiency
+    std::mt19937 gen;
+    std::normal_distribution<float> dist_noise;
+    std::normal_distribution<float> angle_noise;
 
     LaserSensor(float range, float sigma_d, float sigma_a)
-        : Range(range), sigma_distance(sigma_d), sigma_angle(sigma_a), position({0,0}) {}
+        : Range(range), sigma_distance(sigma_d), sigma_angle(sigma_a), position({0,0}),
+          gen(std::random_device{}()),
+          dist_noise(0, sigma_d),
+          angle_noise(0, sigma_a) {}
 
+    // Compute Euclidean distance to obstacle
     float distanceTo(Vector2 obstacle) {
         float dx = obstacle.x - position.x;
         float dy = obstacle.y - position.y;
         return sqrt(dx*dx + dy*dy);
     }
 
+    // Sense obstacles on the map image
     std::vector<SensorMeasurement> senseObstacles(Image &map) {
         std::vector<SensorMeasurement> data;
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::normal_distribution<float> dist_noise(0, sigma_distance);
-        std::normal_distribution<float> angle_noise(0, sigma_angle);
 
-        for(int i=0; i<60; i++) {
-            float angle = (2*M_PI) * i / 60.0f;
-            for(int j=0; j<100; j++) {
-                float u = j / 100.0f;
+        const int numRays = 60;    // number of laser rays
+        const int stepsPerRay = 100; // samples along each ray
+
+        for(int i=0; i<numRays; i++) {
+            float angle = (2*M_PI) * i / numRays;
+
+            for(int j=0; j<stepsPerRay; j++) {
+                float u = j / (float)stepsPerRay;
                 float x = position.x * (1-u) + (position.x + Range * cos(angle)) * u;
                 float y = position.y * (1-u) + (position.y - Range * sin(angle)) * u;
 
@@ -44,26 +55,39 @@ public:
                     Color c = GetImageColor(map, (int)x, (int)y);
                     if (c.r == 0 && c.g == 0 && c.b == 0) { // obstacle
                         SensorMeasurement m;
-                        m.distance = distanceTo({x, y}) + dist_noise(gen);
-                        m.angle = fmod(angle + angle_noise(gen), 2*M_PI);
+                        m.distance = distanceTo({x, y}) + dist_noise(gen); // add noise
+                        m.angle = fmod(angle + angle_noise(gen), 2*M_PI);  // add angle noise
                         m.position = position;
                         data.push_back(m);
-                        break;
+                        break; // stop at first obstacle
                     }
                 }
             }
         }
         return data;
     }
+
+    // Draw the sensor and its rays
+    void drawLaserRays(const std::vector<SensorMeasurement>& measurements) {
+        // Draw all rays
+        for (auto& m : measurements) {
+            float x = m.position.x + m.distance * cos(m.angle);
+            float y = m.position.y - m.distance * sin(m.angle);
+            DrawLineV(m.position, {x, y}, GREEN); // ray
+        }
+
+        // Draw the sensor as a blue circle
+        DrawCircleV(position, 5, BLUE);
+    }
 };
 
 // ------------------ Environment ------------------
 class Environment {
 public:
-    Image originalMapImage;
-    Image revealedMapImage;
+    Image originalMapImage;     // the original floor plan
+    Image revealedMapImage;     // what sensor has seen
     Texture2D revealedMapTexture;
-    std::vector<Vector2> pointCloud;
+    std::vector<Vector2> pointCloud; // scanned points
 
     Environment(const char* filename) {
         originalMapImage = LoadImage(filename); // load floor plan
@@ -71,11 +95,13 @@ public:
         revealedMapTexture = LoadTextureFromImage(revealedMapImage);
     }
 
+    // Convert polar coordinates to Cartesian
     Vector2 polarToCartesian(float distance, float angle, Vector2 robotPos) {
         return { robotPos.x + distance * cos(angle),
                  robotPos.y - distance * sin(angle) };
     }
 
+    // Store sensor data: update point cloud and reveal map
     void storeData(std::vector<SensorMeasurement>& data) {
         for(auto& m : data) {
             Vector2 p = polarToCartesian(m.distance, m.angle, m.position);
@@ -92,6 +118,7 @@ public:
         UpdateTexture(revealedMapTexture, revealedMapImage.data);
     }
 
+    // Draw scanned points (red)
     void drawSensorData() {
         for(auto& p : pointCloud) {
             DrawPixelV(p, RED);
@@ -111,13 +138,16 @@ int main() {
     const int height = 600;
     InitWindow(width, height, "Laser Sensor Map Reveal");
 
+    // Load environment
     Environment env("assets/floor_plan.png");
+
+    // Create laser sensor
     LaserSensor laser(200, 0.5f, 0.01f);
 
     SetTargetFPS(60);
 
     while (!WindowShouldClose()) {
-        // Sensor follows mouse like Python version
+        // Move sensor to mouse position
         Vector2 mousePos = GetMousePosition();
         laser.position = mousePos;
 
@@ -128,8 +158,16 @@ int main() {
         // Draw everything
         BeginDrawing();
         ClearBackground(BLACK);
+
+        // Draw the progressively revealed map
         DrawTexture(env.revealedMapTexture, 0, 0, WHITE);
-        env.drawSensorData(); // red points
+
+        // Draw LIDAR rays and sensor
+        laser.drawLaserRays(sensorData);
+
+        // Draw accumulated point cloud
+        env.drawSensorData();
+
         EndDrawing();
     }
 
