@@ -44,9 +44,35 @@ void removeWall(Cell &current, Cell &next, Direction dir) {
     else if (dir == LEFT) { current.leftWall = false; next.rightWall = false; }
 }
 
+// Find the unique path from start to end
+bool findPath(int x, int y, std::vector<std::vector<Cell>>& grid, std::vector<std::pair<int,int>>& path, std::vector<std::vector<bool>>& visited) {
+    if (x == cols-1 && y == rows-1) { // reached end
+        path.push_back({x, y});
+        return true;
+    }
+
+    visited[y][x] = true;
+
+    // Check directions in order: TOP, RIGHT, BOTTOM, LEFT
+    if (!grid[y][x].topWall && y > 0 && !visited[y-1][x]) {
+        if (findPath(x, y-1, grid, path, visited)) { path.push_back({x, y}); return true; }
+    }
+    if (!grid[y][x].rightWall && x < cols-1 && !visited[y][x+1]) {
+        if (findPath(x+1, y, grid, path, visited)) { path.push_back({x, y}); return true; }
+    }
+    if (!grid[y][x].bottomWall && y < rows-1 && !visited[y+1][x]) {
+        if (findPath(x, y+1, grid, path, visited)) { path.push_back({x, y}); return true; }
+    }
+    if (!grid[y][x].leftWall && x > 0 && !visited[y][x-1]) {
+        if (findPath(x-1, y, grid, path, visited)) { path.push_back({x, y}); return true; }
+    }
+
+    return false;
+}
+
 int main() {
     srand(time(NULL));
-    InitWindow(cols * cellSize, rows * cellSize, "Maze Generator");
+    InitWindow(cols * cellSize, rows * cellSize, "Maze Generator with Solution Path");
 
     std::vector<std::vector<Cell>> grid(rows, std::vector<Cell>(cols));
 
@@ -69,6 +95,11 @@ int main() {
         }
     }
 
+    // Find solution path
+    std::vector<std::pair<int,int>> path;
+    std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
+    findPath(0, 0, grid, path, visited);
+
     SetTargetFPS(60);
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -89,8 +120,17 @@ int main() {
         }
 
         // Draw start and end
-        DrawRectangle(2, 2, cellSize-4, cellSize-4, GREEN); // start
-        DrawRectangle(cols*cellSize-cellSize+2, rows*cellSize-cellSize+2, cellSize-4, cellSize-4, RED); // end
+        DrawRectangle(2, 2, cellSize-4, cellSize-4, GREEN);
+        DrawRectangle(cols*cellSize-cellSize+2, rows*cellSize-cellSize+2, cellSize-4, cellSize-4, RED);
+
+        // Draw solution path as red line
+        for (size_t i = 0; i < path.size()-1; i++) {
+            int x1 = path[i].first * cellSize + cellSize/2;
+            int y1 = path[i].second * cellSize + cellSize/2;
+            int x2 = path[i+1].first * cellSize + cellSize/2;
+            int y2 = path[i+1].second * cellSize + cellSize/2;
+            DrawLine(x1, y1, x2, y2, RED);
+        }
 
         EndDrawing();
     }
