@@ -85,10 +85,11 @@
 	<vector>
 	<random>
 
-1771194138 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\11_robot _maze\main.cpp
+1771291158 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\11_robot _maze\main.cpp
 	"raylib.h"
 	<vector>
 	<stack>
 	<cstdlib>
 	<ctime>
+	<algorithm>
 
