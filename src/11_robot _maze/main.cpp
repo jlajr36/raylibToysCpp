@@ -3,6 +3,7 @@
 #include <stack>
 #include <cstdlib>
 #include <ctime>
+#include <algorithm>
 
 struct Cell {
     bool visited = false;
@@ -12,26 +13,31 @@ struct Cell {
     bool leftWall = true;
 };
 
-// Maze dimensions
-const int cols = 30;  // wider than tall
+const int cols = 30;
 const int rows = 15;
 const int cellSize = 40;
 
 enum Direction {TOP, RIGHT, BOTTOM, LEFT};
+enum State {GENERATING, EXPLORING, FINISHED};
 
-bool getUnvisitedNeighbor(int x, int y, const std::vector<std::vector<Cell>>& grid, int& nx, int& ny, Direction& dir) {
+State state = GENERATING;
+
+bool getUnvisitedNeighbor(int x, int y,
+                          std::vector<std::vector<Cell>>& grid,
+                          int& nx, int& ny, Direction& dir)
+{
     std::vector<std::pair<std::pair<int,int>, Direction>> neighbors;
 
-    if (y > 0 && !grid[y-1][x].visited) neighbors.push_back({{x, y-1}, TOP});
-    if (x < cols-1 && !grid[y][x+1].visited) neighbors.push_back({{x+1, y}, RIGHT});
-    if (y < rows-1 && !grid[y+1][x].visited) neighbors.push_back({{x, y+1}, BOTTOM});
-    if (x > 0 && !grid[y][x-1].visited) neighbors.push_back({{x-1, y}, LEFT});
+    if (y > 0 && !grid[y-1][x].visited) neighbors.push_back({{x,y-1}, TOP});
+    if (x < cols-1 && !grid[y][x+1].visited) neighbors.push_back({{x+1,y}, RIGHT});
+    if (y < rows-1 && !grid[y+1][x].visited) neighbors.push_back({{x,y+1}, BOTTOM});
+    if (x > 0 && !grid[y][x-1].visited) neighbors.push_back({{x-1,y}, LEFT});
 
     if (!neighbors.empty()) {
-        int index = rand() % neighbors.size();
-        nx = neighbors[index].first.first;
-        ny = neighbors[index].first.second;
-        dir = neighbors[index].second;
+        int i = rand() % neighbors.size();
+        nx = neighbors[i].first.first;
+        ny = neighbors[i].first.second;
+        dir = neighbors[i].second;
         return true;
     }
     return false;
@@ -44,92 +50,185 @@ void removeWall(Cell &current, Cell &next, Direction dir) {
     else if (dir == LEFT) { current.leftWall = false; next.rightWall = false; }
 }
 
-// Find the unique path from start to end
-bool findPath(int x, int y, std::vector<std::vector<Cell>>& grid, std::vector<std::pair<int,int>>& path, std::vector<std::vector<bool>>& visited) {
-    if (x == cols-1 && y == rows-1) { // reached end
-        path.push_back({x, y});
-        return true;
-    }
+struct Robot {
+    int cellX = 0;
+    int cellY = 0;
 
-    visited[y][x] = true;
+    Vector2 position;
+    Vector2 target;
 
-    // Check directions in order: TOP, RIGHT, BOTTOM, LEFT
-    if (!grid[y][x].topWall && y > 0 && !visited[y-1][x]) {
-        if (findPath(x, y-1, grid, path, visited)) { path.push_back({x, y}); return true; }
-    }
-    if (!grid[y][x].rightWall && x < cols-1 && !visited[y][x+1]) {
-        if (findPath(x+1, y, grid, path, visited)) { path.push_back({x, y}); return true; }
-    }
-    if (!grid[y][x].bottomWall && y < rows-1 && !visited[y+1][x]) {
-        if (findPath(x, y+1, grid, path, visited)) { path.push_back({x, y}); return true; }
-    }
-    if (!grid[y][x].leftWall && x > 0 && !visited[y][x-1]) {
-        if (findPath(x-1, y, grid, path, visited)) { path.push_back({x, y}); return true; }
+    std::stack<std::pair<int,int>> stack;
+    std::vector<std::vector<bool>> visited;
+};
+
+void senseCell(int x, int y,
+               std::vector<std::vector<Cell>>& grid,
+               std::vector<std::vector<Cell>>& known,
+               std::vector<std::vector<bool>>& discovered)
+{
+    known[y][x] = grid[y][x];
+    discovered[y][x] = true;
+}
+
+bool explorationStep(Robot& robot,
+                     std::vector<std::vector<Cell>>& grid,
+                     std::vector<std::vector<Cell>>& known,
+                     std::vector<std::vector<bool>>& discovered)
+{
+    int x = robot.cellX;
+    int y = robot.cellY;
+
+    senseCell(x, y, grid, known, discovered);
+
+    std::vector<std::pair<int,int>> neighbors;
+    Cell& c = known[y][x];
+
+    if (!c.topWall && y > 0 && !robot.visited[y-1][x])
+        neighbors.push_back({x, y-1});
+    if (!c.rightWall && x < cols-1 && !robot.visited[y][x+1])
+        neighbors.push_back({x+1, y});
+    if (!c.bottomWall && y < rows-1 && !robot.visited[y+1][x])
+        neighbors.push_back({x, y+1});
+    if (!c.leftWall && x > 0 && !robot.visited[y][x-1])
+        neighbors.push_back({x-1, y});
+
+    if (!neighbors.empty()) {
+        auto [nx, ny] = neighbors[rand() % neighbors.size()];
+        robot.stack.push({nx, ny});
+        robot.visited[ny][nx] = true;
+
+        robot.cellX = nx;
+        robot.cellY = ny;
+        robot.target = {nx * cellSize + cellSize/2.0f,
+                        ny * cellSize + cellSize/2.0f};
+    } else {
+        robot.stack.pop();
+        if (robot.stack.empty()) return true;
+
+        auto [bx, by] = robot.stack.top();
+        robot.cellX = bx;
+        robot.cellY = by;
+        robot.target = {bx * cellSize + cellSize/2.0f,
+                        by * cellSize + cellSize/2.0f};
     }
 
     return false;
 }
 
 int main() {
+
     srand(time(NULL));
-    InitWindow(cols * cellSize, rows * cellSize, "Maze Generator with Solution Path");
+
+    InitWindow(cols * cellSize, rows * cellSize,
+               "Autonomous Maze Exploration");
+    SetTargetFPS(60);
 
     std::vector<std::vector<Cell>> grid(rows, std::vector<Cell>(cols));
+    std::vector<std::vector<Cell>> known(rows, std::vector<Cell>(cols));
+    std::vector<std::vector<bool>> discovered(rows,
+        std::vector<bool>(cols, false));
 
-    // Maze generation using stack (recursive backtracking)
-    std::stack<std::pair<int,int>> stack;
-    int cx = 0, cy = 0;
-    grid[cy][cx].visited = true;
-    stack.push({cx, cy});
+    std::stack<std::pair<int,int>> genStack;
+    int gx = 0, gy = 0;
+    grid[0][0].visited = true;
+    genStack.push({0,0});
 
-    while (!stack.empty()) {
-        auto [x, y] = stack.top();
-        int nx, ny;
-        Direction dir;
-        if (getUnvisitedNeighbor(x, y, grid, nx, ny, dir)) {
-            grid[ny][nx].visited = true;
-            removeWall(grid[y][x], grid[ny][nx], dir);
-            stack.push({nx, ny});
-        } else {
-            stack.pop();
-        }
-    }
+    Robot robot;
 
-    // Find solution path
-    std::vector<std::pair<int,int>> path;
-    std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
-    findPath(0, 0, grid, path, visited);
-
-    SetTargetFPS(60);
     while (!WindowShouldClose()) {
-        BeginDrawing();
-        ClearBackground(RAYWHITE);
 
-        // Draw maze
-        for (int y = 0; y < rows; y++) {
-            for (int x = 0; x < cols; x++) {
-                int px = x * cellSize;
-                int py = y * cellSize;
-                Cell &c = grid[y][x];
+        // ---------- UPDATE ----------
+        if (state == GENERATING) {
 
-                if (c.topWall) DrawLine(px, py, px + cellSize, py, BLACK);
-                if (c.rightWall) DrawLine(px + cellSize, py, px + cellSize, py + cellSize, BLACK);
-                if (c.bottomWall) DrawLine(px, py + cellSize, px + cellSize, py + cellSize, BLACK);
-                if (c.leftWall) DrawLine(px, py, px, py + cellSize, BLACK);
+            if (!genStack.empty()) {
+                auto [x,y] = genStack.top();
+                int nx, ny;
+                Direction dir;
+
+                if (getUnvisitedNeighbor(x,y,grid,nx,ny,dir)) {
+                    grid[ny][nx].visited = true;
+                    removeWall(grid[y][x], grid[ny][nx], dir);
+                    genStack.push({nx,ny});
+                } else {
+                    genStack.pop();
+                }
+            } else {
+                // generation complete → initialize robot
+                robot.cellX = 0;
+                robot.cellY = 0;
+                robot.position = {cellSize/2.0f, cellSize/2.0f};
+                robot.target = robot.position;
+                robot.visited =
+                    std::vector<std::vector<bool>>(rows,
+                        std::vector<bool>(cols,false));
+                robot.visited[0][0] = true;
+                robot.stack.push({0,0});
+
+                state = EXPLORING;
             }
         }
 
-        // Draw start and end
-        DrawRectangle(2, 2, cellSize-4, cellSize-4, GREEN);
-        DrawRectangle(cols*cellSize-cellSize+2, rows*cellSize-cellSize+2, cellSize-4, cellSize-4, RED);
+        else if (state == EXPLORING) {
 
-        // Draw solution path as red line
-        for (size_t i = 0; i < path.size()-1; i++) {
-            int x1 = path[i].first * cellSize + cellSize/2;
-            int y1 = path[i].second * cellSize + cellSize/2;
-            int x2 = path[i+1].first * cellSize + cellSize/2;
-            int y2 = path[i+1].second * cellSize + cellSize/2;
-            DrawLine(x1, y1, x2, y2, RED);
+            static float timer = 0;
+            timer += GetFrameTime();
+
+            if (timer > 0.05f) {
+                bool done = explorationStep(robot, grid,
+                                            known, discovered);
+                if (robot.cellX == cols-1 &&
+                    robot.cellY == rows-1) {
+                    state = FINISHED;
+                }
+                timer = 0;
+            }
+
+            robot.position.x +=
+                (robot.target.x - robot.position.x) * 0.2f;
+            robot.position.y +=
+                (robot.target.y - robot.position.y) * 0.2f;
+        }
+
+        // ---------- DRAW ----------
+        BeginDrawing();
+        ClearBackground(BLACK);
+
+        for (int y=0;y<rows;y++) {
+            for (int x=0;x<cols;x++) {
+
+                int px = x * cellSize;
+                int py = y * cellSize;
+
+                Cell& c = grid[y][x];
+
+                if (c.topWall) DrawLine(px,py,px+cellSize,py,WHITE);
+                if (c.rightWall) DrawLine(px+cellSize,py,
+                                          px+cellSize,py+cellSize,WHITE);
+                if (c.bottomWall) DrawLine(px,py+cellSize,
+                                           px+cellSize,py+cellSize,WHITE);
+                if (c.leftWall) DrawLine(px,py,
+                                         px,py+cellSize,WHITE);
+
+                if (state != GENERATING &&
+                    !discovered[y][x]) {
+                    DrawRectangle(px,py,cellSize,cellSize,
+                                  Fade(BLACK,0.6f));
+                }
+            }
+        }
+
+        DrawRectangle(2,2,cellSize-4,cellSize-4,GREEN);
+        DrawRectangle(cols*cellSize-cellSize+2,
+                      rows*cellSize-cellSize+2,
+                      cellSize-4,cellSize-4,RED);
+
+        if (state != GENERATING)
+            DrawCircleV(robot.position,
+                        cellSize/4, ORANGE);
+
+        if (state == FINISHED) {
+            DrawText("Goal Reached",
+                     20,20,30,YELLOW);
         }
 
         EndDrawing();
