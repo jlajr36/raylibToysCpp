@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <algorithm>
+#include <random>
 
 using namespace std;
 
@@ -28,9 +29,17 @@ struct ConfettiParticle {
     Color   color;
 };
 
-// Helper: random float in [min, max)
+// Helper function: gives a random float number between min and max
 float GetRandom(float min, float max) {
-    return min + static_cast<float>(rand()) / RAND_MAX * (max - min);
+    // This is our random number generator.
+    // "static" means we only make it once, and it remembers its state for next time.
+    static mt19937 gen(random_device{}()); 
+    
+    // This sets up a range from min to max
+    uniform_real_distribution<float> dist(min, max); 
+    
+    // Get a random number from the generator within the range and return it
+    return dist(gen);
 }
 
 // Initialise a single particle (called on start and on reset)
