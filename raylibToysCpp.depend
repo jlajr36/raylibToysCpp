@@ -93,3 +93,11 @@
 	<ctime>
 	<algorithm>
 
+1771381987 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\04_circle_collision\main.cpp
+	"raylib.h"
+	"raymath.h"
+	<math.h>
+
+1750638462 c:\raylib-5.5_win64_mingw-w64\include\raymath.h
+	<math.h>
+
