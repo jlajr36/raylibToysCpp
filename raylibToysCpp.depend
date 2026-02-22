@@ -101,3 +101,8 @@
 1750638462 c:\raylib-5.5_win64_mingw-w64\include\raymath.h
 	<math.h>
 
+1771801208 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\12_basic_ik_robot\main.cpp
+	"raylib.h"
+	<vector>
+	<cmath>
+
