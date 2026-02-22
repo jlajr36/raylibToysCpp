@@ -1,5 +1,5 @@
 #include "raylib.h"
-#include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -10,21 +10,28 @@ int main()
 
     InitWindow(screenWidth, screenHeight, "IK Robot Simulator");
 
-    Camera camera = {
-        { 8.0f, 4.0f, 8.0f },
-        { 0.0f, 1.0f, 0.0f },
-        { 0.0f, 1.0f, 0.0f },
-        35.0f,
-        CAMERA_PERSPECTIVE
-    };
+    float cameraAngle = 45.0f;
+    const float radius = 8.0f;
+    const float cameraHeight = 4.0f;
+    const float rotationSpeed = 60.0f;
+
+    Camera camera = {0};
+    camera.target = { 0.0f, 1.0f, 0.0f };
+    camera.up = { 0.0f, 1.0f, 0.0f };
+    camera.fovy = 35.0f;
 
     SetTargetFPS(60);
 
     while(!WindowShouldClose()) {
 
-        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-            UpdateCamera(&camera, CAMERA_FREE);
-        }
+        if (IsKeyDown(KEY_RIGHT)) cameraAngle += rotationSpeed * GetFrameTime();
+        if (IsKeyDown(KEY_LEFT))  cameraAngle -= rotationSpeed * GetFrameTime();
+
+        float rad = cameraAngle * (PI / 180.0f);
+
+        camera.position.x = radius * sin(rad);
+        camera.position.y = cameraHeight;
+        camera.position.z = radius * cos(rad);
 
         BeginDrawing();
         ClearBackground(BLACK);
