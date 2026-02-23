@@ -98,12 +98,11 @@ int main() {
 
     // --- Camera settings ---
     float cameraAngle = 45.0f;
-    const float radius = 8.0f;
-    const float cameraHeight = 4.0f;
+    const float radius = 10.0f;
+    const float cameraHeight = 5.0f;
     const float rotationSpeed = 60.0f;
 
     Camera camera = {0};
-    camera.target = {0.0f, 1.0f, 0.0f}; // default target
     camera.up = {0.0f, 1.0f, 0.0f};
     camera.fovy = 35.0f;
 
@@ -139,9 +138,11 @@ int main() {
         if (IsKeyDown(KEY_LEFT)) cameraAngle -= rotationSpeed * dt;
         float rad = cameraAngle * (PI / 180.0f);
         camera.position.x = basePos.x + radius * sin(rad);
-        camera.position.y = cameraHeight + 1.5f;
+        camera.position.y = cameraHeight;
         camera.position.z = basePos.z + radius * cos(rad);
-        camera.target = {basePos.x, 2.25f, basePos.z + 1.5f}; // focus on triangle
+
+        // Center the robot
+        camera.target = {basePos.x, 1.5f, basePos.z};
 
         // --- Update target ---
         Vector3 target = GetTriangleTarget(dt, triangle, segment, t, triangleSpeed);
