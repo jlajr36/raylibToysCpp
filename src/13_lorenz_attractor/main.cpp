@@ -1,11 +1,16 @@
 #include "raylib.h"
-#include <vector>
+#include <deque>
 #include <cmath>
 
 struct Point3D {
     Vector3 pos;
     float hue;
 };
+
+// Linear interpolation
+float Lerp(float a, float b, float t) {
+    return a + t * (b - a);
+}
 
 int main() {
     InitWindow(800, 600, "3D Lorenz Attractor");
@@ -24,7 +29,7 @@ int main() {
     float a = 10.0f, b = 28.0f, c = 8.0f / 3.0f;
     float dt = 0.01f;
 
-    std::vector<Point3D> points;
+    std::deque<Point3D> points;
     const int maxPoints = 2000;
 
     float angle = 0.0f;     // camera rotation
@@ -40,30 +45,27 @@ int main() {
             x = x0; y = y0; z = z0;
             angle = 0.0f;
             radius = 50.0f;
-            startHue = GetRandomValue(0, 359); // random starting color
+            startHue = GetRandomValue(0, 359);
         }
 
-        // --- Lorenz integration ---
+        // --- Lorenz integration (Euler) ---
         float dx = a * (y - x) * dt;
         float dy = (x * (b - z) - y) * dt;
         float dz = (x * y - c * z) * dt;
-
         x += dx; y += dy; z += dz;
 
         // Add new point
         points.push_back({{x, y, z}, 0.0f});
-
-        // Remove oldest if buffer full
-        if ((int)points.size() > maxPoints) points.erase(points.begin());
+        if (points.size() > maxPoints) points.pop_front(); // O(1) removal
 
         // --- Compute center ---
         Vector3 center = {0.0f, 0.0f, 0.0f};
+        for (const auto& p : points) {
+            center.x += p.pos.x;
+            center.y += p.pos.y;
+            center.z += p.pos.z;
+        }
         if (!points.empty()) {
-            for (const auto& p : points) {
-                center.x += p.pos.x;
-                center.y += p.pos.y;
-                center.z += p.pos.z;
-            }
             center.x /= points.size();
             center.y /= points.size();
             center.z /= points.size();
@@ -81,11 +83,19 @@ int main() {
         if (radius < 10.0f) radius = 10.0f;
         if (radius > 200.0f) radius = 200.0f;
 
-        // --- Update camera position ---
-        camera.target = center;
-        camera.position.x = center.x + sin(angle) * radius;
-        camera.position.z = center.z + cos(angle) * radius;
-        camera.position.y = center.y + 30.0f;
+        // --- Smooth camera update ---
+        float camX = center.x + sin(angle) * radius;
+        float camZ = center.z + cos(angle) * radius;
+        camera.position.x = Lerp(camera.position.x, camX, 0.1f);
+        camera.position.z = Lerp(camera.position.z, camZ, 0.1f);
+        camera.position.y = Lerp(camera.position.y, center.y + 30.0f, 0.1f);
+        camera.target.x = Lerp(camera.target.x, center.x, 0.1f);
+        camera.target.y = Lerp(camera.target.y, center.y, 0.1f);
+        camera.target.z = Lerp(camera.target.z, center.z, 0.1f);
+
+        // --- Animate hue ---
+        startHue += 0.5f;
+        if (startHue > 360.0f) startHue -= 360.0f;
 
         // --- Drawing ---
         BeginDrawing();
@@ -94,9 +104,10 @@ int main() {
 
         if (points.size() > 1) {
             for (size_t i = 1; i < points.size(); i++) {
-                // Start from random hue and continue gradient
-                float hue = fmod(startHue + ((float)i / maxPoints) * 360.0f, 360.0f);
-                Color col = ColorFromHSV(hue, 1.0f, 1.0f);
+                // Color gradient along trail with fading brightness
+                float t = (float)i / points.size();      // 0 oldest -> 1 newest
+                float hue = fmod(startHue + t * 360.0f, 360.0f);
+                Color col = ColorFromHSV(hue, 1.0f, t); // fade brightness
                 DrawLine3D(points[i-1].pos, points[i].pos, col);
             }
         }
