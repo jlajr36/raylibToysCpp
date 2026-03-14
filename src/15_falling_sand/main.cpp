@@ -32,7 +32,7 @@ int main() {
 
     while (!WindowShouldClose()) {
 
-        // Spawn particles on mouse press
+        // Spawn particles on left mouse press
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
             int mouseCol = GetMouseX() / w;
             int mouseRow = GetMouseY() / w;
@@ -57,6 +57,59 @@ int main() {
             // Increment hue for color cycling
             hueValue += 0.5f;
             if (hueValue > 360.0f) hueValue = 1.0f;
+        }
+
+        // Remove particles on right mouse press
+        if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
+            int vacuumRadius = 20;
+            int mouseCol = GetMouseX() / w;
+            int mouseRow = GetMouseY() / w;
+
+            for (int i = -vacuumRadius; i <= vacuumRadius; i++) {
+                for (int j = -vacuumRadius; j <= vacuumRadius; j++) {
+                    if (i*i + j*j > vacuumRadius*vacuumRadius)
+                        continue;
+
+                    int col = mouseCol + i;
+                    int row = mouseRow + j;
+
+                    if (!withinGrid(col, row))
+                        continue;
+
+                    int idx = index(col, row);
+
+                    if (grid[idx] > 0) {
+                        int dx = mouseCol - col;
+                        int dy = mouseRow - row;
+
+                        int stepX = (dx > 0) ? 1 : (dx < 0 ? -1 : 0);
+                        int stepY = (dy > 0) ? 1 : (dy < 0 ? -1 : 0);
+
+                        int newX = col + stepX;
+                        int newY = row + stepY;
+
+                        if (withinGrid(newX, newY)) {
+                            int newIdx = index(newX, newY);
+
+                            if (grid[newIdx] == 0) {
+                                grid[newIdx] = grid[idx];
+                                velocityGrid[newIdx] = velocityGrid[idx];
+
+                                grid[idx] = 0;
+                                velocityGrid[idx] = 0.0f;
+
+                                activeParticles.push_back(newIdx);
+                            }
+                        }
+
+                        // Remove particle if very close to cursor
+                        if (abs(dx) <= 1 && abs(dy) <= 1) {
+                            grid[idx] = 0;
+                            velocityGrid[idx] = 0.0f;
+                        }
+                    }
+                }
+            }
         }
 
         // Update active particles
