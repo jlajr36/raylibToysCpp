@@ -103,12 +103,21 @@ struct Chain {
     }
 
     void draw() const {
+        // draw links
         for (size_t i = 0; i+1 < joints.size(); ++i){
-            DrawLineV({joints[i].x, joints[i].y}, {joints[i+1].x, joints[i+1].y}, WHITE);
+            DrawLineEx(Vector2{joints[i].x, joints[i].y}, Vector2{joints[i+1].x, joints[i+1].y}, 4.0f, WHITE);
         }
+
+        // joint appearance
+        const float fillRadius = 16.0f;    // filled circle radius
+        const int outlineLayers = 4;       // how many concentric outlines -> thicker stroke
         for (const auto& j : joints){
-            DrawCircleV({j.x, j.y}, 16, Color{42,44,53,255});
-            DrawCircleLines((int)j.x, (int)j.y, 16, WHITE);
+            // filled circle (background color)
+            DrawCircleV({j.x, j.y}, fillRadius, Color{42,44,53,255});
+            // thicker white outline by drawing multiple circle lines outward
+            for (int k = 0; k < outlineLayers; ++k) {
+                DrawCircleLines((int)j.x, (int)j.y, fillRadius + k + 0.5f, WHITE);
+            }
         }
     }
 };
@@ -116,6 +125,9 @@ struct Chain {
 int main(){
     const int screenW = 800;
     const int screenH = 600;
+
+    // Enable 4x MSAA before window init for smoother edges
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(screenW, screenH, "Chain - raylib");
     SetTargetFPS(60);
 
