@@ -146,7 +146,7 @@ int main()
         // Glow layers
         for (int i = 0; i < 6; i++)
         {
-            float thickness = 8.0f - i * 1.2f;
+            float thickness = 4.0f - i * 1.2f;
             Color glow = {255, 255, 255, (unsigned char)(50 - i * 8)};
             DrawLightning(lightning, glow, thickness);
         }

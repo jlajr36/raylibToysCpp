@@ -110,3 +110,9 @@
 	"raylib.h"
 	<cmath>
 
+1775602959 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\18_lightning_effect\main.cpp
+	"raylib.h"
+	<vector>
+	<cmath>
+	<cstdlib>
+
