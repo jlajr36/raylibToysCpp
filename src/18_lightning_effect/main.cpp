@@ -130,7 +130,7 @@ int main() {
 
         // Render Logic
         BeginDrawing();
-            // Background color matches JS: #0b5693
+            // Background color #0b5693
             ClearBackground((Color){ 11, 86, 147, 255 });
 
             // Subtle vignetting gradient
