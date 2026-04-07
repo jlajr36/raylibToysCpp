@@ -94,7 +94,8 @@ int main()
     const int screenWidth = 1000;
     const int screenHeight = 600;
 
-    InitWindow(screenWidth, screenHeight, "Real Lightning - raylib");
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
+    InitWindow(screenWidth, screenHeight, "Lightning");
 
     SetTargetFPS(60);
 
@@ -154,8 +155,8 @@ int main()
         DrawLightning(lightning, WHITE, 2.0f);
 
         // Endpoints
-        DrawCircleV(p1, 8, RED);
-        DrawCircleV(p2, 8, BLUE);
+        DrawCircleV(p1, 4, WHITE);
+        DrawCircleV(p2, 4, WHITE);
 
         DrawText("Drag the points!", 10, 10, 20, RAYWHITE);
 
