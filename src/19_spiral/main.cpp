@@ -8,7 +8,7 @@ const float PEAK = MAX_OFFSET * 0.25f;
 
 int main() {
     SetConfigFlags(FLAG_WINDOW_HIGHDPI);
-    InitWindow(800, 800, "Spiral");
+    InitWindow(1200, 800, "Spiral");
     SetTargetFPS(60);
 
     float time = 0.0f;
