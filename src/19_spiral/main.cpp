@@ -56,8 +56,6 @@ int main() {
             lastPos = currentPos;
         }
 
-        DrawLine(cx, cy - 200, cx, 0, Fade(WHITE, 0.3f));
-
         EndBlendMode();
         EndDrawing();
     }
