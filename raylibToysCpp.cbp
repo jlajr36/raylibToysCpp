@@ -41,6 +41,8 @@
 			<Add library="winmm" />
 			<Add directory="C:/raylib-5.5_win64_mingw-w64/lib" />
 		</Linker>
+		<Unit filename="src/20_Flying_Terrain/Perlin2D.cpp" />
+		<Unit filename="src/20_Flying_Terrain/Perlin2D.h" />
 		<Unit filename="src/20_Flying_Terrain/main.cpp" />
 		<Extensions />
 	</Project>
