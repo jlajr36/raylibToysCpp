@@ -1,5 +1,15 @@
 #include "raylib.h"
 
+Vector2 CubicBezier(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t) {
+    float u = 1.0f - t;
+    float tt = t*t, uu = u*u, uuu = uu*u, ttt = tt*t;
+
+    Vector2 p;
+    p.x = uuu*p0.x + 3*uu*t*p1.x + 3*u*tt*p2.x + ttt*p3.x;
+    p.y = uuu*p0.y + 3*uu*t*p1.y + 3*u*tt*p2.y + ttt*p3.y;
+    return p;
+}
+
 bool IsMouseNearPoint(Vector2 p, float radius) {
     return CheckCollisionPointCircle(GetMousePosition(), p, radius);
 }
@@ -57,6 +67,13 @@ int main()
             10, 10, 20,
             DARKGRAY
         );
+        Vector2 prev = p0;
+        for (int i = 1; i <= 100; i++) {
+            float t = i / 100.0f;
+            Vector2 curr = CubicBezier(p0, p1, p2, p3, t);
+            DrawLineV(prev, curr, BLUE);
+            prev = curr;
+        }
         DrawLineV(p0, p1, LIGHTGRAY);
         DrawLineV(p2, p3, LIGHTGRAY);
         DrawCircleV(p0, radius, RED);
