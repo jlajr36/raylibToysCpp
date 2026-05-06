@@ -14,6 +14,31 @@ bool IsMouseNearPoint(Vector2 p, float radius) {
     return CheckCollisionPointCircle(GetMousePosition(), p, radius);
 }
 
+// Simple slider
+float Slider(float x, float y, float width, float min, float max, float value)
+{
+    Vector2 mouse = GetMousePosition();
+    Rectangle bar = { x, y, width, 6 };
+
+    bool hovering = CheckCollisionPointRec(mouse, bar);
+
+    if (hovering && IsMouseButtonDown(MOUSE_LEFT_BUTTON))
+    {
+        float t = (mouse.x - x) / width;
+        if (t < 0) t = 0;
+        if (t > 1) t = 1;
+        value = min + t * (max - min);
+    }
+
+    DrawRectangleRec(bar, LIGHTGRAY);
+
+    float t = (value - min) / (max - min);
+    float hx = x + t * width;
+    DrawCircle(hx, y + 3, 8, DARKGRAY);
+
+    return value;
+}
+
 int main()
 {
     const int screenWidth = 1200;
@@ -27,7 +52,9 @@ int main()
     Vector2 mousePos = {0, 0};
     int selected = -1;
 
-    // Point start positions
+    float thickness = 2.0f;
+
+    // Control points
     Vector2 p0 = {400, 600};
     Vector2 p1 = {500, 200};
     Vector2 p2 = {800, 200};
@@ -66,14 +93,15 @@ int main()
             TextFormat("Mouse: (%.0f, %.0f)", mousePos.x, mousePos.y),
             10, 10, 20,
             DARKGRAY
-        );
-        Vector2 prev = p0;
-        for (int i = 1; i <= 100; i++) {
-            float t = i / 100.0f;
-            Vector2 curr = CubicBezier(p0, p1, p2, p3, t);
-            DrawLineV(prev, curr, BLUE);
-            prev = curr;
-        }
+        );  
+        // Slider
+        DrawText("Curve Thickness", 10, 40, 20, DARKGRAY);
+        thickness = Slider(10, 70, 200, 1.0f, 20.0f, thickness);
+
+        Vector2 points[4] = { p0, p1, p2, p3 };
+        DrawSplineBezierCubic(points, 4, thickness, BLUE);
+
+        // Control polygon
         DrawLineV(p0, p1, LIGHTGRAY);
         DrawLineV(p2, p3, LIGHTGRAY);
         DrawCircleV(p0, radius, RED);
