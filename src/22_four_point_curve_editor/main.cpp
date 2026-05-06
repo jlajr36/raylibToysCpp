@@ -44,6 +44,7 @@ int main()
             if (selected == 3) p3 = mousePos;
         }
 
+        // Release mouse
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
             selected = -1;
         }
@@ -56,6 +57,8 @@ int main()
             10, 10, 20,
             DARKGRAY
         );
+        DrawLineV(p0, p1, LIGHTGRAY);
+        DrawLineV(p2, p3, LIGHTGRAY);
         DrawCircleV(p0, radius, RED);
         DrawCircleV(p1, radius, GREEN);
         DrawCircleV(p2, radius, GREEN);
