@@ -1,62 +1,47 @@
 #include "raylib.h"
+#include <iostream>
+#include <vector>
 
-// Returns true if the slider is being hovered or dragged to prevent clicking points "through" the UI
-bool GuiSlider(Rectangle bounds, float min, float max, float *value) {
-    Vector2 mouse = GetMousePosition();
-    bool hovering = CheckCollisionPointRec(mouse, bounds);
-    static bool dragging = false;
+std::vector<Vector2> CubicBezier(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, int steps) {
+    if (steps <= 0) return { p0 };
 
-    if (hovering && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) dragging = true;
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) dragging = false;
+    float u, t, w0, w1, w2, w3, x, y;
+    std::vector<Vector2> curve_out;
+    curve_out.reserve(steps + 1);
 
-    if (dragging) {
-        float t = (mouse.x - bounds.x) / bounds.width;
-        if (t < 0.0f) t = 0.0f; 
-        if (t > 1.0f) t = 1.0f;
-        *value = min + t * (max - min);
+    for (int i = 0; i <= steps; i++) {
+        // Even time step
+        t = (float)i / (float)steps;
+
+        // Step 1: compute helper value
+        u = 1 - t;                  // (1 - t)
+
+        // Step 2: compute Bézier weights
+        w0 = u * u * u;             // (1 - t)^3
+        w1 = 3 * u * u * t;         // 3(1 - t)^2 t
+        w2 = 3 * u * t * t;         // 3(1 - t) t^2
+        w3 = t * t * t;             // t^3
+
+        // Step 3: Weighted sum of control points (core Bézier equation)
+        x = w0 * p0.x + w1 * p1.x + w2 * p2.x + w3 * p3.x;
+        y = w0 * p0.y + w1 * p1.y + w2 * p2.y + w3 * p3.y;
+
+        // Populate Vector
+        curve_out.push_back({x, y});
     }
 
-    // Draw Bar
-    DrawRectangleRec(bounds, LIGHTGRAY);
-    // Draw Handle
-    float handlePos = bounds.x + ((*value - min) / (max - min)) * bounds.width;
-    DrawCircle(handlePos, bounds.y + bounds.height / 2, 8, DARKGRAY);
-
-    return (hovering || dragging);
+    return curve_out;
 }
 
-Vector2 CubicBezier(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t)
+int main()
 {
-    float u = 1.0f - t;
-
-    float tt = t * t;
-    float uu = u * u;
-
-    float uuu = uu * u;
-    float ttt = tt * t;
-
-    return (Vector2){
-        uuu * p0.x +
-        3 * uu * t * p1.x +
-        3 * u * tt * p2.x +
-        ttt * p3.x,
-
-        uuu * p0.y +
-        3 * uu * t * p1.y +
-        3 * u * tt * p2.y +
-        ttt * p3.y
-    };
-}
-
-int main() {
     const int screenWidth = 1200;
     const int screenHeight = 800;
-
     SetConfigFlags(FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
-    InitWindow(screenWidth, screenHeight, "4-Point Curve Editor");
+    InitWindow(screenWidth, screenHeight, "Bezier Curve");
     SetTargetFPS(60);
 
-    // 1. Storage: Using an array makes logic cleaner and works directly with DrawSpline
+    // Curve start points
     Vector2 p[4] = {
         { 400, 600 }, // p0
         { 500, 200 }, // p1
@@ -64,76 +49,24 @@ int main() {
         { 900, 600 }  // p3
     };
 
-    float thickness = 4.0f;
-    int selectedIndex = -1;
-    const float grabRadius = 12.0f;
+    while(!WindowShouldClose()) {
 
-    while (!WindowShouldClose()) {
-        Vector2 mousePos = GetMousePosition();
-        bool uiBusy = false;
+        float thickness = 1.0f;
+        int points = 256;
+        std::vector<Vector2> curve = CubicBezier(p[0], p[1], p[2], p[3], points);
 
-        // --- Logic ---
-
-        // Update UI first
-        Rectangle sliderBounds = { 20, 80, 200, 10 };
-        uiBusy = GuiSlider(sliderBounds, 1.0f, 30.0f, &thickness);
-
-        // Point Selection (only if UI isn't being used)
-        if (!uiBusy) {
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                for (int i = 0; i < 4; i++) {
-                    if (CheckCollisionPointCircle(mousePos, p[i], grabRadius)) {
-                        selectedIndex = i;
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Handle Dragging
-        if (selectedIndex != -1) {
-            p[selectedIndex] = mousePos;
-            SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
-            if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) selectedIndex = -1;
-        } else {
-            SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-        }
-
-        // --- Render ---
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
-        // Draw Help Info
-        DrawText("4-Point Bezier Editor", 20, 20, 20, DARKGRAY);
-        DrawText(TextFormat("Thickness: %.1f", thickness), 20, 55, 18, GRAY);
-
-        // 2. The Hull (Control Polygon) - Connects points to show the "pull"
-        DrawLineStrip(p, 4, Fade(LIGHTGRAY, 0.6f));
-
-        // 3. The Curve
-        const int segments = 256;
-
-        Vector2 prev = p[0];
-
-        for (int i = 1; i <= segments; i++) {
-            float t = (float)i / (float)segments;
-            Vector2 curr = CubicBezier(p[0], p[1], p[2], p[3], t);
-            DrawLineEx(prev, curr, thickness, BLUE);
-            DrawCircleV(curr, thickness * 0.5f, BLUE);
-            prev = curr;
-        }
-        // 4. Control Points (Visuals)
-        for (int i = 0; i < 4; i++) {
-            // Anchor points (red) vs Handles (green)
-            Color pointColor = (i == 0 || i == 3) ? RED : LIME;
-            
-            // Subtle shadow/outline if selected
-            if (selectedIndex == i) DrawCircleV(p[i], grabRadius + 2, MAROON);
-            
-            DrawCircleV(p[i], grabRadius, pointColor);
-            DrawCircleLinesV(p[i], grabRadius, DARKGRAY); // Outline for clarity
+        // Draw curve line
+        for (int i = 0; i < curve.size() - 1; i++) {
+            DrawLineEx(curve[i], curve[i + 1], thickness, BLUE);
+            DrawCircleV(curve[i], thickness * 0.5f, BLUE);
         }
 
+        // Draw control points
+        for (int i = 0; i < 4; i++)
+            DrawCircleV(p[i], 6, BLUE);
         EndDrawing();
     }
 
