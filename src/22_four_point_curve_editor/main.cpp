@@ -25,6 +25,29 @@ bool GuiSlider(Rectangle bounds, float min, float max, float *value) {
     return (hovering || dragging);
 }
 
+Vector2 CubicBezier(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t)
+{
+    float u = 1.0f - t;
+
+    float tt = t * t;
+    float uu = u * u;
+
+    float uuu = uu * u;
+    float ttt = tt * t;
+
+    return (Vector2){
+        uuu * p0.x +
+        3 * uu * t * p1.x +
+        3 * u * tt * p2.x +
+        ttt * p3.x,
+
+        uuu * p0.y +
+        3 * uu * t * p1.y +
+        3 * u * tt * p2.y +
+        ttt * p3.y
+    };
+}
+
 int main() {
     const int screenWidth = 1200;
     const int screenHeight = 800;
@@ -88,8 +111,17 @@ int main() {
         DrawLineStrip(p, 4, Fade(LIGHTGRAY, 0.6f));
 
         // 3. The Curve
-        DrawSplineBezierCubic(p, 4, thickness, BLUE);
+        const int segments = 256;
 
+        Vector2 prev = p[0];
+
+        for (int i = 1; i <= segments; i++) {
+            float t = (float)i / (float)segments;
+            Vector2 curr = CubicBezier(p[0], p[1], p[2], p[3], t);
+            DrawLineEx(prev, curr, thickness, BLUE);
+            DrawCircleV(curr, thickness * 0.5f, BLUE);
+            prev = curr;
+        }
         // 4. Control Points (Visuals)
         for (int i = 0; i < 4; i++) {
             // Anchor points (red) vs Handles (green)
