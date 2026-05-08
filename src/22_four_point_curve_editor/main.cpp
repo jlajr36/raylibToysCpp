@@ -50,13 +50,12 @@ int main()
     };
     float thickness = 1.0f;
     int points = 256;
-    std::vector<Vector2> curve;
+    std::vector<Vector2> curve = CubicBezier(p[0], p[1], p[2], p[3], points);
     Vector2 mousePos;
     float check_radius = 6.0f;
     int selectedPoint = -1;
 
     while(!WindowShouldClose()) {
-        curve = CubicBezier(p[0], p[1], p[2], p[3], points);
         mousePos = GetMousePosition();
 
         // Select Point
@@ -71,6 +70,7 @@ int main()
         // Drag Point
         if (selectedPoint != -1 && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
             p[selectedPoint] = mousePos;
+            curve = CubicBezier(p[0], p[1], p[2], p[3], points);
         }
         // Release Point
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
@@ -80,7 +80,7 @@ int main()
         BeginDrawing();
         ClearBackground(RAYWHITE);
         // Draw curve line
-        for (size_t i = 0; i + 1 < curve.size() - 1; i++) {
+        for (size_t i = 0; i < curve.size() - 1; i++) {
             DrawLineEx(curve[i], curve[i + 1], thickness, BLUE);
             DrawCircleV(curve[i], thickness * 0.5f, BLUE);
         }
