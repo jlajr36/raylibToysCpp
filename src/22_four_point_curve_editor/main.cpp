@@ -52,27 +52,43 @@ int main()
     int points = 256;
     std::vector<Vector2> curve;
     Vector2 mousePos;
+    float check_radius = 6.0f;
+    int selectedPoint = -1;
 
     while(!WindowShouldClose()) {
         curve = CubicBezier(p[0], p[1], p[2], p[3], points);
         mousePos = GetMousePosition();
 
+        // Select Point
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            for (int i = 0; i < 4; i++) {
+                if (CheckCollisionPointCircle(mousePos, p[i], check_radius)) {
+                    selectedPoint = i;
+                    break;
+                }
+            }
+        }
+        // Drag Point
+        if (selectedPoint != -1 && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            p[selectedPoint] = mousePos;
+        }
+        // Release Point
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            selectedPoint = -1;
+        }
+
         BeginDrawing();
         ClearBackground(RAYWHITE);
-
         // Draw curve line
-        for (int i = 0; i < curve.size() - 1; i++) {
+        for (size_t i = 0; i + 1 < curve.size() - 1; i++) {
             DrawLineEx(curve[i], curve[i + 1], thickness, BLUE);
             DrawCircleV(curve[i], thickness * 0.5f, BLUE);
         }
-
         // Draw control points
         for (int i = 0; i < 4; i++) {
-            if (CheckCollisionPointCircle(mousePos, p[i], 6)) {
-                DrawCircleV(p[i], 6, GREEN);
-            } else {
-                DrawCircleV(p[i], 6, RED);
-            }
+            bool hovered = CheckCollisionPointCircle(mousePos, p[i], check_radius);
+            Color cir_color = hovered ? GREEN : RED;
+            DrawCircleV(p[i], check_radius, cir_color);
         }
         EndDrawing();
     }
