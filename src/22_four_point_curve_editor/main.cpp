@@ -51,9 +51,11 @@ int main()
     float thickness = 1.0f;
     int points = 256;
     std::vector<Vector2> curve;
+    Vector2 mousePos;
 
     while(!WindowShouldClose()) {
         curve = CubicBezier(p[0], p[1], p[2], p[3], points);
+        mousePos = GetMousePosition();
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
@@ -65,8 +67,13 @@ int main()
         }
 
         // Draw control points
-        for (int i = 0; i < 4; i++)
-            DrawCircleV(p[i], 6, RED);
+        for (int i = 0; i < 4; i++) {
+            if (CheckCollisionPointCircle(mousePos, p[i], 6)) {
+                DrawCircleV(p[i], 6, GREEN);
+            } else {
+                DrawCircleV(p[i], 6, RED);
+            }
+        }
         EndDrawing();
     }
 
