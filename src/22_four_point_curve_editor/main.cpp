@@ -1,36 +1,31 @@
 #include "raylib.h"
 
-bool IsMouseNearPoint(Vector2 p, float radius) {
-    return CheckCollisionPointCircle(GetMousePosition(), p, radius);
-}
-
-// Simple slider
-float Slider(float x, float y, float width, float min, float max, float value)
-{
+// Returns true if the slider is being hovered or dragged to prevent clicking points "through" the UI
+bool GuiSlider(Rectangle bounds, float min, float max, float *value) {
     Vector2 mouse = GetMousePosition();
-    Rectangle bar = { x, y, width, 6 };
+    bool hovering = CheckCollisionPointRec(mouse, bounds);
+    static bool dragging = false;
 
-    bool hovering = CheckCollisionPointRec(mouse, bar);
+    if (hovering && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) dragging = true;
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) dragging = false;
 
-    if (hovering && IsMouseButtonDown(MOUSE_LEFT_BUTTON))
-    {
-        float t = (mouse.x - x) / width;
-        if (t < 0) t = 0;
-        if (t > 1) t = 1;
-        value = min + t * (max - min);
+    if (dragging) {
+        float t = (mouse.x - bounds.x) / bounds.width;
+        if (t < 0.0f) t = 0.0f; 
+        if (t > 1.0f) t = 1.0f;
+        *value = min + t * (max - min);
     }
 
-    DrawRectangleRec(bar, LIGHTGRAY);
+    // Draw Bar
+    DrawRectangleRec(bounds, LIGHTGRAY);
+    // Draw Handle
+    float handlePos = bounds.x + ((*value - min) / (max - min)) * bounds.width;
+    DrawCircle(handlePos, bounds.y + bounds.height / 2, 8, DARKGRAY);
 
-    float t = (value - min) / (max - min);
-    float hx = x + t * width;
-    DrawCircle(hx, y + 3, 8, DARKGRAY);
-
-    return value;
+    return (hovering || dragging);
 }
 
-int main()
-{
+int main() {
     const int screenWidth = 1200;
     const int screenHeight = 800;
 
@@ -38,66 +33,75 @@ int main()
     InitWindow(screenWidth, screenHeight, "4-Point Curve Editor");
     SetTargetFPS(60);
 
-    const float radius = 8.0f;
-    Vector2 mousePos = {0, 0};
-    int selected = -1;
+    // 1. Storage: Using an array makes logic cleaner and works directly with DrawSpline
+    Vector2 p[4] = {
+        { 400, 600 }, // p0
+        { 500, 200 }, // p1
+        { 800, 200 }, // p2
+        { 900, 600 }  // p3
+    };
 
-    float thickness = 2.0f;
+    float thickness = 4.0f;
+    int selectedIndex = -1;
+    const float grabRadius = 12.0f;
 
-    // Control points
-    Vector2 p0 = {400, 600};
-    Vector2 p1 = {500, 200};
-    Vector2 p2 = {800, 200};
-    Vector2 p3 = {900, 600};
+    while (!WindowShouldClose()) {
+        Vector2 mousePos = GetMousePosition();
+        bool uiBusy = false;
 
-    while (!WindowShouldClose())
-    {
-        // ****** Logic ******
-        mousePos = GetMousePosition();
+        // --- Logic ---
 
-        // Select point
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            if (IsMouseNearPoint(p0, radius)) selected = 0;
-            else if (IsMouseNearPoint(p1, radius)) selected = 1;
-            else if (IsMouseNearPoint(p2, radius)) selected = 2;
-            else if (IsMouseNearPoint(p3, radius)) selected = 3;
+        // Update UI first
+        Rectangle sliderBounds = { 20, 80, 200, 10 };
+        uiBusy = GuiSlider(sliderBounds, 1.0f, 30.0f, &thickness);
+
+        // Point Selection (only if UI isn't being used)
+        if (!uiBusy) {
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                for (int i = 0; i < 4; i++) {
+                    if (CheckCollisionPointCircle(mousePos, p[i], grabRadius)) {
+                        selectedIndex = i;
+                        break;
+                    }
+                }
+            }
         }
 
-        // Drag point
-        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && selected != -1) {
-            if (selected == 0) p0 = mousePos;
-            if (selected == 1) p1 = mousePos;
-            if (selected == 2) p2 = mousePos;
-            if (selected == 3) p3 = mousePos;
+        // Handle Dragging
+        if (selectedIndex != -1) {
+            p[selectedIndex] = mousePos;
+            SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
+            if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) selectedIndex = -1;
+        } else {
+            SetMouseCursor(MOUSE_CURSOR_DEFAULT);
         }
 
-        // Release mouse
-        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-            selected = -1;
-        }
-
-        // ****** Render ******
+        // --- Render ---
         BeginDrawing();
         ClearBackground(RAYWHITE);
-        DrawText(
-            TextFormat("Mouse: (%.0f, %.0f)", mousePos.x, mousePos.y),
-            10, 10, 20,
-            DARKGRAY
-        );  
-        // Slider
-        DrawText("Curve Thickness", 10, 40, 20, DARKGRAY);
-        thickness = Slider(10, 70, 200, 1.0f, 20.0f, thickness);
 
-        Vector2 points[4] = { p0, p1, p2, p3 };
-        DrawSplineBezierCubic(points, 4, thickness, BLUE);
+        // Draw Help Info
+        DrawText("4-Point Bezier Editor", 20, 20, 20, DARKGRAY);
+        DrawText(TextFormat("Thickness: %.1f", thickness), 20, 55, 18, GRAY);
 
-        // Control polygon
-        DrawLineV(p0, p1, LIGHTGRAY);
-        DrawLineV(p2, p3, LIGHTGRAY);
-        DrawCircleV(p0, radius, RED);
-        DrawCircleV(p1, radius, GREEN);
-        DrawCircleV(p2, radius, GREEN);
-        DrawCircleV(p3, radius, RED);
+        // 2. The Hull (Control Polygon) - Connects points to show the "pull"
+        DrawLineStrip(p, 4, Fade(LIGHTGRAY, 0.6f));
+
+        // 3. The Curve
+        DrawSplineBezierCubic(p, 4, thickness, BLUE);
+
+        // 4. Control Points (Visuals)
+        for (int i = 0; i < 4; i++) {
+            // Anchor points (red) vs Handles (green)
+            Color pointColor = (i == 0 || i == 3) ? RED : LIME;
+            
+            // Subtle shadow/outline if selected
+            if (selectedIndex == i) DrawCircleV(p[i], grabRadius + 2, MAROON);
+            
+            DrawCircleV(p[i], grabRadius, pointColor);
+            DrawCircleLinesV(p[i], grabRadius, DARKGRAY); // Outline for clarity
+        }
+
         EndDrawing();
     }
 
