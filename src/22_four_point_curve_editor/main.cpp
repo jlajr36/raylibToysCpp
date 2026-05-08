@@ -48,12 +48,12 @@ int main()
         { 800, 200 }, // p2
         { 900, 600 }  // p3
     };
+    float thickness = 1.0f;
+    int points = 256;
+    std::vector<Vector2> curve;
 
     while(!WindowShouldClose()) {
-
-        float thickness = 1.0f;
-        int points = 256;
-        std::vector<Vector2> curve = CubicBezier(p[0], p[1], p[2], p[3], points);
+        curve = CubicBezier(p[0], p[1], p[2], p[3], points);
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
@@ -66,7 +66,7 @@ int main()
 
         // Draw control points
         for (int i = 0; i < 4; i++)
-            DrawCircleV(p[i], 6, BLUE);
+            DrawCircleV(p[i], 6, RED);
         EndDrawing();
     }
 
