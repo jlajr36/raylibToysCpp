@@ -151,3 +151,9 @@
 	<algorithm>
 	<cmath>
 
+1778444657 source:c:\users\horiz\desktop\projects\raylibtoyscpp\src\23_maclaurn_series\main.cpp
+	"raylib.h"
+	<iostream>
+	<vector>
+	<cmath>
+
