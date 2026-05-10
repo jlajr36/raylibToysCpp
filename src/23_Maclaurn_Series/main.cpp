@@ -1,6 +1,5 @@
 #include "raylib.h"
 #include <iostream>
-#include <vector>
 #include <cmath>
 
 enum w_type {
@@ -8,71 +7,52 @@ enum w_type {
     COS
 };
 
-std::vector<int> odds(int count) {
-    std::vector<int> values;
-    for (int i = 0; i < count; i++) {
-        values.push_back(2*i+1);
+double factorial(int n) {
+    double result = 1.0;
+    for (int i = 2; i <= n; i++) {
+        result *= i;
     }
-    return values;
+    return result;
 }
 
-std::vector<int> evens(int count) {
-    std::vector<int> values;
-    for (int i = 0; i < count; i++) {
-        values.push_back(2*(i+1));
+// Clean Maclaurin series
+double maclauren(double x, w_type type) {
+    double result = (type == COS) ? 1.0 : x;
+    int terms = 15;
+
+    for (int n = 1; n < terms; n++) {
+        int power = (type == SIN) ? (2 * n + 1) : (2 * n);
+        double sign = (n % 2 == 0) ? 1.0 : -1.0;
+
+        result += sign * pow(x, power) / factorial(power);
     }
-    return values;
+
+    return result;
 }
 
-double factorial(int value) {
-    double _factorial = 1;
-    for (int i = value; i >= 1; i--) {
-        _factorial *= i;
-    }
-    return _factorial;
-}
-
-double maclauren(double x, w_type w) {
-    double value = 0.0;
-    if (w == COS) {value = 1.0;}
-    double numerator = 0.0;
-    double denominator = 0.0;
-    double term = 0.0;
-    double sign = 0.0;
-    std::vector<int> values;
-    if (w == SIN) {
-        values = odds(15);
-    } else {
-        values = evens(15);
-    }
-    for (int i = 0; i < values.size(); i++) {
-        numerator = pow(x, values[i]);
-        denominator = factorial(values[i]);
-        term = numerator / denominator;
-        sign = (values[i] / 2 % 2 == 0) ? 1.0 : -1.0;
-        value += (sign * term);
-    }
-    return value;
-}
-
-int main()
-{
+int main() {
     const int screenWidth = 800;
     const int screenHeight = 450;
-    InitWindow(screenWidth, screenHeight, "Maclaurn Series");
+
+    InitWindow(screenWidth, screenHeight, "Maclaurin Series");
     SetTargetFPS(60);
 
-    std::cout << "Maclauren sin: " << maclauren(0.5, SIN) << '\n';
-    std::cout << "sin:           " << sin(0.5) << '\n';
-    std::cout << "Maclauren cos: " << maclauren(0.5, COS) << '\n';
-    std::cout << "cos:           " << cos(0.5) << '\n';
+    double x = 0.5;
 
-    while(!WindowShouldClose()) {
+    std::cout << "Maclaurin sin: " << maclauren(x, SIN) << '\n';
+    std::cout << "std::sin:      " << sin(x) << '\n';
+    std::cout << "Maclaurin cos: " << maclauren(x, COS) << '\n';
+    std::cout << "std::cos:      " << cos(x) << '\n';
+
+    while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
+        DrawText("Maclaurin Series Demo", 20, 20, 20, DARKGRAY);
+
         EndDrawing();
     }
+
     CloseWindow();
     return 0;
 }
